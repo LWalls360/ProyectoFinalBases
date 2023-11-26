@@ -199,3 +199,23 @@ SELECT
 FROM
     orden
     JOIN empleado ON orden.mesero_id = empleado.id;
+
+-- Función que con un no. de empleado devuelve la cantidad de ordenes del empleado por día y el total 
+-- pagado por dichas órdenes. También revisa si el empleado es mesero.
+CREATE OR REPLACE FUNCTION ordenes_y_totales_de_mesero_por_dia(no_empleado INTEGER)
+RETURNS TABLE
+(
+    ordenes_del_dia INTEGER
+    total_ingresos_por_ordenes DECIMAL(10, 2)
+) AS $$
+DECLARE
+    es_mesero BOOLEAN;
+BEGIN
+    IF NOT EXISTS (SELECT mesero_id FROM horario WHERE mesero_id = no_empleado)
+        RAISE EXCEPTION 'El empleado no es mesero o no existe';
+    END IF;
+
+    RETURN QUERY
+    SELECT COUNT(id), COALESCE(SUM(cantidad_total),0) FROM orden WHERE fecha_hora::date = CURRENT_DATE;
+END;
+$$ LANGUAGE plpgsql;
