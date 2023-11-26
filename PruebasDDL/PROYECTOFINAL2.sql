@@ -46,6 +46,12 @@ CREATE TABLE dependiente (
     FOREIGN KEY (empleado_id) REFERENCES empleado(id)
 );
 
+CREATE TABLE categoria (
+    id SERIAL PRIMARY KEY,    
+    nombre VARCHAR(100) NOT NULL,
+    descripcion VARCHAR(200) NOT NULL,
+);
+
 -- Platillos: Información de los platillos que ofrece el restaurante
 CREATE TABLE producto (
     id SERIAL PRIMARY KEY,
@@ -57,12 +63,6 @@ CREATE TABLE producto (
     categoria_id INTEGER NOT NULL,    
     FOREIGN KEY (categoria_id) REFERENCES categoria(id)
 );
-
-CREATE TABLE categoria (
-    id SERIAL PRIMARY KEY,    
-    nombre VARCHAR(100) NOT NULL,
-    descripcion VARCHAR(200) NOT NULL,
-)
 
 -- Ordenes: Información de las ordenes realizadas en el restaurante
 CREATE TABLE orden (
