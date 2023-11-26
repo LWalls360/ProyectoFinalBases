@@ -87,7 +87,7 @@ CREATE TABLE orden (
     FOREIGN KEY (cliente_id) REFERENCES cliente(id)
 );
 
--- Relación Platillos-Ordenes: Tabla intermedia para relacionar platillos y ordenes
+-- Relación Productos-Ordenes: Tabla intermedia para relacionar productos y ordenes
 CREATE TABLE producto_orden (
     id SERIAL PRIMARY KEY,
     producto_id INTEGER NOT NULL,
@@ -206,7 +206,7 @@ CREATE OR REPLACE FUNCTION ordenes_y_totales_de_mesero_por_dia(no_empleado INTEG
 RETURNS TABLE
 (
     ordenes_del_dia INTEGER
-    total_ingresos_por_ordenes DECIMAL(10, 2)
+    total_ingresos_por_ordenes DECIMAL(30, 2)
 ) AS $$
 DECLARE
     es_mesero BOOLEAN;
@@ -216,6 +216,40 @@ BEGIN
     END IF;
 
     RETURN QUERY
-    SELECT COUNT(id), COALESCE(SUM(cantidad_total),0) FROM orden WHERE fecha_hora::date = CURRENT_DATE;
+    SELECT COUNT(id), COALESCE(SUM(cantidad_total),0) FROM orden WHERE fecha_hora::DATE = CURRENT_DATE;
+END;
+$$ LANGUAGE plpgsql;
+
+-- Vista que devuelve el producto mas vendido de la historia.
+CREATE OR REPLACE VIEW producto_mas_vendido AS
+SELECT *
+FROM producto p
+WHERE
+    p.id = (SELECT producto_id
+            FROM producto_orden po
+            GROUP BY (producto_id)
+            ORDER BY SUM(cantidad) DESC
+            LIMIT 1);
+
+-- Vista que devuelve el nombre de los productos no disponibles.
+CREATE OR REPLACE VIEW nombre_productos_no_disponibles AS
+SELECT nombre
+FROM producto
+WHERE disponible = FALSE;
+
+-- Funcion que dada una fecha, o un par de fechas, devuelve el número de ventas y el monto total de esas ventas.
+CREATE OR REPLACE FUNCTION ordenes_y_totales_de_mesero_por_dia(fecha_i DATE, fecha_f DATE default NULL)
+RETURNS TABLE
+(
+    ventas_por_periodo INTEGER
+    total_ingresos_por_ventas DECIMAL(30, 2)
+) AS $$
+BEGIN
+    IF fecha_f IS NULL THEN
+        RETURN QUERY
+        SELECT COUNT(id), COALESCE(SUM(cantidad_total),0) FROM orden WHERE fecha_hora::DATE = fecha_i;
+    ELSE        
+        RETURN QUERY
+        SELECT COUNT(id), COALESCE(SUM(cantidad_total),0) FROM orden WHERE fecha_hora::DATE BETWEEN fecha_i AND fecha_f;
 END;
 $$ LANGUAGE plpgsql;
