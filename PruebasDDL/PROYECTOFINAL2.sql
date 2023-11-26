@@ -25,22 +25,28 @@ CREATE TABLE empleado (
     num_empleado INTEGER NOT NULL,
     nombre VARCHAR(100) NOT NULL,
 	apellido_paterno VARCHAR(100) NOT NULL,
-	apellido_materno VARCHAR(100) NULL,
+	apellido_materno VARCHAR(100) NOT NULL,
     fecha_nacimiento DATE NOT NULL,
     telefono VARCHAR(20) NOT NULL,
     edad INTEGER NOT NULL,
-    domicilio VARCHAR(200) NOT NULL,
+    estado VARCHAR(20) NOT NULL,
+    codigo postal INTEGER(5) NOT NULL,
+    colonia VARCHAR(100) NOT NULL,
+    calle VARCHAR(100) NOT NULL,
+    numero_domicilio INTEGER(5) NOT NULL,
     sueldo DECIMAL(10, 2) NOT NULL,
     rol_administrativo VARCHAR(100),    
     especialidad_cocinero VARCHAR(100),
     foto BYTEA
 );
 
--- Dependientes: Información de los dependientes de los empleados
+-- Dependientes: Información de los dependientes Dde los empleados
 CREATE TABLE dependiente (
     id SERIAL PRIMARY KEY,
     curp VARCHAR(18) NOT NULL,
     nombre VARCHAR(100) NOT NULL,
+	apellido_paterno VARCHAR(100) NOT NULL,
+	apellido_materno VARCHAR(100) NOT NULL,
     parentesco VARCHAR(50) NOT NULL,
     empleado_id INTEGER NOT NULL,
     FOREIGN KEY (empleado_id) REFERENCES empleado(id)
@@ -69,7 +75,13 @@ CREATE TABLE cliente (
     id SERIAL PRIMARY KEY,
     rfc VARCHAR(13) NOT NULL,
     nombre VARCHAR(100) NOT NULL,
-    domicilio VARCHAR(200) NOT NULL,
+	apellido_paterno VARCHAR(100) NOT NULL,
+	apellido_materno VARCHAR(100) NOT NULL,
+    estado VARCHAR(20) NOT NULL,
+    codigo postal INTEGER(5) NOT NULL,
+    colonia VARCHAR(100) NOT NULL,
+    calle VARCHAR(100) NOT NULL,
+    numero_domicilio INTEGER(5) NOT NULL,
     razon_social VARCHAR(100) NOT NULL,
     email VARCHAR(100) NOT NULL,
     fecha_nacimiento DATE NOT NULL
@@ -78,11 +90,11 @@ CREATE TABLE cliente (
 -- Ordenes: Información de las ordenes realizadas en el restaurante
 CREATE TABLE orden (
     id SERIAL PRIMARY KEY,
-    folio VARCHAR(50) NOT NULL,
     fecha_hora TIMESTAMP NOT NULL,
     cantidad_total DECIMAL(10, 2) NOT NULL,
     mesero_id INTEGER NOT NULL,
     cliente_id INTEGER NOT NULL,
+    folio VARCHAR(7),
     FOREIGN KEY (mesero_id) REFERENCES empleado(id),
     FOREIGN KEY (cliente_id) REFERENCES cliente(id)
 );
@@ -167,11 +179,23 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql;
 
+CREATE OR REPLACE FUNCTION crear_folio_orden() RETURNS TRIGGER AS $$
+BEGIN
+    NEW.folio = CONCAT('ORD-', LPAD(CAST(NEW.id AS VARCHAR), 3, '0'))
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
 -- Triggers
-CREATE TRIGGER actualizar_totales_productos
+CREATE TRIGGER tr_actualizar_totales_productos
 AFTER INSERT ON producto_orden
 FOR EACH ROW
 EXECUTE FUNCTION actualizar_totales();
+
+CREATE TRIGGER tr_crear_folio_orden
+AFTER INSERT ON producto_orden
+FOR EACH ROW
+EXECUTE FUNCTION crear_folio_orden();
 
 -- Vista de Factura: Contiene información relevante para simular una factura
 CREATE VIEW vista_factura AS
@@ -192,7 +216,7 @@ LEFT JOIN producto p ON po.producto_id = p.id;
 -- Vista de Factura: Proporciona información necesaria para asemejarse a una factura y una orden
 CREATE VIEW factura AS
 SELECT
-    CONCAT('ORD-', LPAD(CAST(orden.id AS VARCHAR), 3, '0')) AS folio,
+
     orden.fecha_hora,
     orden.cantidad_total,
     CONCAT(empleado.nombre, ' ', empleado.apellido_paterno, ' ', empleado.apellido_materno) AS mesero
