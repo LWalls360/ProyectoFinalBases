@@ -64,6 +64,17 @@ CREATE TABLE producto (
     FOREIGN KEY (categoria_id) REFERENCES categoria(id)
 );
 
+-- Clientes: Información de los cliente que solicitan factura
+CREATE TABLE cliente (
+    id SERIAL PRIMARY KEY,
+    rfc VARCHAR(13) NOT NULL,
+    nombre VARCHAR(100) NOT NULL,
+    domicilio VARCHAR(200) NOT NULL,
+    razon_social VARCHAR(100) NOT NULL,
+    email VARCHAR(100) NOT NULL,
+    fecha_nacimiento DATE NOT NULL
+);
+
 -- Ordenes: Información de las ordenes realizadas en el restaurante
 CREATE TABLE orden (
     id SERIAL PRIMARY KEY,
@@ -73,7 +84,7 @@ CREATE TABLE orden (
     mesero_id INTEGER NOT NULL,
     cliente_id INTEGER NOT NULL,
     FOREIGN KEY (mesero_id) REFERENCES empleado(id),
-    FOREIGN KEY (cliente_id) REFERENCES cliente(id);
+    FOREIGN KEY (cliente_id) REFERENCES cliente(id)
 );
 
 -- Relación Platillos-Ordenes: Tabla intermedia para relacionar platillos y ordenes
@@ -85,17 +96,6 @@ CREATE TABLE producto_orden (
     precio_total DECIMAL(10, 2) NOT NULL,
     FOREIGN KEY (producto_id) REFERENCES producto(id),
     FOREIGN KEY (orden_id) REFERENCES orden(id)
-);
-
--- Clientes: Información de los cliente que solicitan factura
-CREATE TABLE cliente (
-    id SERIAL PRIMARY KEY,
-    rfc VARCHAR(13) NOT NULL,
-    nombre VARCHAR(100) NOT NULL,
-    domicilio VARCHAR(200) NOT NULL,
-    razon_social VARCHAR(100) NOT NULL,
-    email VARCHAR(100) NOT NULL,
-    fecha_nacimiento DATE NOT NULL
 );
 
 -- Puestos: Información de los distintos puestos que pueden tener los empleados
@@ -168,13 +168,8 @@ END;
 $$ LANGUAGE plpgsql;
 
 -- Triggers
-CREATE TRIGGER actualizar_totales_platillos
-AFTER INSERT ON platillo_orden
-FOR EACH ROW
-EXECUTE FUNCTION actualizar_totales();
-
-CREATE TRIGGER actualizar_totales_bebidas
-AFTER INSERT ON bebida_orden
+CREATE TRIGGER actualizar_totales_productos
+AFTER INSERT ON producto_orden
 FOR EACH ROW
 EXECUTE FUNCTION actualizar_totales();
 
@@ -186,15 +181,13 @@ SELECT
     o.cantidad_total,
     o.mesero_id,
     e.nombre AS nombre_mesero,
-    COALESCE(p.nombre, b.nombre) AS nombre_producto,
-    COALESCE(po.cantidad, bo.cantidad) AS cantidad_producto,
-    COALESCE(po.precio_total, bo.precio_total) AS precio_total_producto
+    p.nombre AS nombre_producto,
+    po.cantidad AS cantidad_producto,
+    po.precio_total AS precio_total_producto
 FROM orden o
 JOIN empleado e ON o.mesero_id = e.id
-LEFT JOIN platillo_orden po ON o.id = po.orden_id
-LEFT JOIN platillo p ON po.platillo_id = p.id
-LEFT JOIN bebida_orden bo ON o.id = bo.orden_id
-LEFT JOIN bebida b ON bo.bebida_id = b.id;
+LEFT JOIN producto_orden po ON o.id = po.orden_id
+LEFT JOIN producto p ON po.producto_id = p.id;
 
 -- Vista de Factura: Proporciona información necesaria para asemejarse a una factura y una orden
 CREATE VIEW factura AS
@@ -206,4 +199,3 @@ SELECT
 FROM
     orden
     JOIN empleado ON orden.mesero_id = empleado.id;
-
