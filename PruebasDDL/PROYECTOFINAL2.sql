@@ -49,7 +49,7 @@ CREATE TABLE dependiente (
 CREATE TABLE categoria (
     id SERIAL PRIMARY KEY,    
     nombre VARCHAR(100) NOT NULL,
-    descripcion VARCHAR(200) NOT NULL,
+    descripcion VARCHAR(200) NOT NULL
 );
 
 -- Platillos: Información de los platillos que ofrece el restaurante
