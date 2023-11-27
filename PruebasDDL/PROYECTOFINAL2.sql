@@ -213,17 +213,6 @@ JOIN empleado e ON o.mesero_id = e.id
 LEFT JOIN producto_orden po ON o.id = po.orden_id
 LEFT JOIN producto p ON po.producto_id = p.id;
 
--- Vista de Factura: Proporciona información necesaria para asemejarse a una factura y una orden
-CREATE VIEW factura AS
-SELECT
-
-    orden.fecha_hora,
-    orden.cantidad_total,
-    CONCAT(empleado.nombre, ' ', empleado.apellido_paterno, ' ', empleado.apellido_materno) AS mesero
-FROM
-    orden
-    JOIN empleado ON orden.mesero_id = empleado.id;
-
 -- Función que con un no. de empleado devuelve la cantidad de ordenes del empleado por día y el total 
 -- pagado por dichas órdenes. También revisa si el empleado es mesero.
 CREATE OR REPLACE FUNCTION ordenes_y_totales_de_mesero_por_dia(no_empleado INTEGER)
